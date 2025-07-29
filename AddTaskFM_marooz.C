@@ -91,12 +91,12 @@ AliAnalysisTaskFM_marooz *AddTaskFM_marooz(Int_t _YEAR_ = 2015, Bool_t _IS_MC_ =
 
   _mgr->AddTask(_task);
 
-  const Int_t _NUM_CON_ = 13; // Number of conditions (e.g., 1 or 2)
+  const Int_t _NUM_CON_ = 26; // Number of conditions (e.g., 1 or 2)
   const Int_t _N_OUTPUTS_ = _NUM_CON_ * (_n_pt_bins + 1) + (_IS_MC_ ? _n_pt_bins : 0);
   AliAnalysisDataContainer *_output_list[_N_OUTPUTS_];
   
   TString str;
-  TString _con_str[_NUM_CON_] = { "fb128rchi2", "fb128dca", "fb128rchi2dca", "fb128rchi2dcaPrim", "fb128rchi2dcawomat", "fb128rchi2dcawowd", "fb128shcls", "fb128shclsdca", "fb128shclsrchi2", "fb128shclsrchi2dca", "fb128shclsrchi2dcaPrim","fb128shclsrchi2dcawomat", "fb128shclsrchi2dcawowd" };
+  TString _con_str[_NUM_CON_] = { "fb128rchi2", "fb128dca", "fb128rchi2dca", "fb128rchi2dcaPrim", "fb128rchi2dcawomat", "fb128rchi2dcawowd", "fb128shcls", "fb128shclsdca", "fb128shclsrchi2", "fb128shclsrchi2dca", "fb128shclsrchi2dcaPrim","fb128shclsrchi2dcawomat", "fb128shclsrchi2dcawowd", "fb768rchi2", "fb768dca", "fb768rchi2dca", "fb768rchi2dcaPrim", "fb768rchi2dcawomat", "fb768rchi2dcawowd", "fb768shcls", "fb768shclsdca", "fb768shclsrchi2", "fb768shclsrchi2dca", "fb768shclsrchi2dcaPrim","fb768shclsrchi2dcawomat", "fb768shclsrchi2dcawowd" };
 
   for (Int_t i = 0; i < 3; i++) std::cout << "\033[31m =================================================== \033[0m" << std::endl;
   
