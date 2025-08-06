@@ -16,11 +16,11 @@ The analysis implements intermittency analysis using factorial moments to study 
     ├── runCode.C                       # Main execution script
     ├── runLists.h                      # Run list definitions for different 
     └── utils/                          # Utility scripts for offline processing
-        ├── copyFiles.sh               # File copying utility
-        ├── getFqbinDAT.C              # Factorial moments extraction and sampling error calculation implementation
-        ├── makeFqStdDAT.C             # Final factorial moments calculation
-        └── merge_batches.sh           # File merging utility
-        └── mergeLocalOutputs.sh       # File merging utility
+        ├── copyGRIDFILES.sh            # File copying utility
+        ├── merge_batches.sh            # File merging after copying
+        ├── makeFqStdDAT.C              # Final factorial moments calculation
+        └── getFqbinDAT.C               # Factorial moments extraction
+        └── mergeLocalOutputs.sh        # File merging utility
 ```
 
 ## Key Components
@@ -132,10 +132,7 @@ Factorial moments stored in TNtuples with variables:
    alienv enter AliPhysics/latest
    ```
 
-2. **Compile the task:**
-   ```bash
-   root -l -b -q 'AliAnalysisTaskFM_marooz.cxx++g'
-   ```
+2. **Set parameters in AddTask**
 
 3. **Run the analysis:**
    ```bash
@@ -151,9 +148,10 @@ The analysis automatically submits jobs to the ALICE Grid with:
 ## Data Processing Workflow
 
 1. **Analysis Execution**: Run `runCode.C` to submit grid jobs
-2. **Data Extraction**: Use `utils/getFq` to extract factorial moments
-3. **Calculation**: Use `utils/makeFq` to calculate and plot results
-4. **Merging**: Use `utils/merge` to combine multiple runs
+2. **Data Extraction**: Use `utils/getFqbinDAT.C` to extract factorial moments offline from the root files, along with sampling error.
+3. **Calculation**: Use `utils/makeFqStdDAT.C` to calculate the final mean of factorial moments and their errors. creates FqStdError.dat files.
+4. **Copying**: Use `utils/copyGRIDFILES.sh` in case you are not able to terminate grid jobs (by any reason), put the grid directory path in it, it will copy all the rootfiles in your local directory. Use `utils/merge_batches.sh` use after `copyGRIDFILES.sh` to merge the files, so that you can have 10-20 files at the end.
+5. **Merging**: `utils/mergeLocalOutputs.sh`, this is to be used after running  step 2, in case you have more than one output root file.
 
 
 ## Contributors
