@@ -102,9 +102,9 @@ void AliAnalysisTaskFM_marooz::UserCreateOutputObjects() {
     hDCAz[i] = new TH1F(Form("hDCAz%s", conStr[i].Data()), "DCAz distribution;DCAz;Counts", 4000, -10.5, 10.5);
     hDCAxy_imp[i] = new TH1F(Form("hDCAxy_imp%s", conStr[i].Data()), "DCAxy calculated with impact parameter;DCAxy;Counts", 4000, -10.5, 10.5);
     hDCAz_imp[i] = new TH1F(Form("hDCAz_imp%s", conStr[i].Data()), "DCAz calculated with impact parameter;DCAz;Counts", 4000, -10.5, 10.5);
-    hDCAxypT[i] = new TH2F(Form("hDCAxypT%s", conStr[i].Data()), "DCAxy vs pT;p_{T};dca_{xy}", 3000, 0, 5.5, 7000, -4.0, 4.0);
-    hDCAzpT[i] = new TH2F(Form("hDCAzpT%s", conStr[i].Data()), "DCAz vs pT;p_{T};dca_{z}", 3000, 0, 5.5, 7000, -4.0, 4.0);
-    hnITScls[i] = new TH1F(Form("hnITScls%s", conStr[i].Data()), "ITS cluster distribution;ITS cluster;Counts", 400, -0.5, 10.5);
+    hDCAxypT[i] = new TH2F(Form("hDCAxypT%s", conStr[i].Data()), "DCAxy vs pT;p_{T};dca_{xy}", 2500, 0, 5.5, 2500, -4.0, 4.0);
+    hDCAzpT[i] = new TH2F(Form("hDCAzpT%s", conStr[i].Data()), "DCAz vs pT;p_{T};dca_{z}", 2500, 0, 5.5, 2500, -4.0, 4.0);
+    hnITScls[i] = new TH1F(Form("hnITScls%s", conStr[i].Data()), "ITS cluster distribution;ITS cluster;Counts", 300, -0.5, 10.5);
     hnITScls2[i] = new TH1F(Form("hnITScls2%s", conStr[i].Data()), "ITS cluster distribution;ITS cluster;Counts", 1e4, 10e3, 80e3);
     hnTPCcls[i] = new TH1F(Form("hnTPCcls%s", conStr[i].Data()), "TPC cluster distribution;TPC cluster;Counts", 300, 0, 200);
     hnTPCcls2[i] = new TH1F(Form("hnTPCcls2%s", conStr[i].Data()), "TPC cluster distribution;TPC cluster;Counts", 1e6, 0, 10e6);
@@ -112,21 +112,21 @@ void AliAnalysisTaskFM_marooz::UserCreateOutputObjects() {
     hmissingCls[i] = new TH1F(Form("hmissingCls%s", conStr[i].Data()), "TPC missing cluster distribution;missingcls;Counts", 500, 0, 10);
     htpcTgl[i] = new TH1F(Form("htpcTgl%s", conStr[i].Data()), "TPC tgl distribution;TPC tgl;Counts", 1000, -2.0, 2.0);
     hNShCls[i] = new TH1F(Form("hNShCls%s", conStr[i].Data()), "TPC shared cluster distribution", 600, 0, 500);
-    hNShClsFra[i] = new TH2F(Form("hNShClsFra%s", conStr[i].Data()), "TPC shared cluster fraction;sharedcls/ncls;sharedcls/ncrrows", 3000, 0, 2, 3000, 0, 2);
+    hNShClsFra[i] = new TH2F(Form("hNShClsFra%s", conStr[i].Data()), "TPC shared cluster fraction;sharedcls/ncls;sharedcls/ncrrows", 2000, 0, 1.4, 2000, 0, 1.4);
     hNShClsNcls[i] = new TH1F(Form("hNShClsNCls%s", conStr[i].Data()), "TPC shared cluster fraction;sharedcls/ncls", 1000, 0, 1.0);
     hNShClsNcrows[i] = new TH1F(Form("hNShClsNRows%s", conStr[i].Data()), "TPC shared cluster fraction;sharedcls/ncrrows", 1000, 0, 1.0);
-    hNFoundClsFra[i] = new TH2F(Form("hNFoundClsFra%s", conStr[i].Data()), "TPC found cluster fraction;sharedcls/ncls;ncrrows/findablecls", 2000, 0, 2, 3000, 0, 10);
-    hNShClsVsPt[i] = new TH2F(Form("hNShClsVsPt%s", conStr[i].Data()), "TPC shared cluster fraction;pt;sharedcls/ncls", 2000, 0, 3.0, 2000, 0, 2.0);
+    hNFoundClsFra[i] = new TH2F(Form("hNFoundClsFra%s", conStr[i].Data()), "TPC found cluster fraction;sharedcls/ncls;ncrrows/findablecls", 2000, 0, 2, 2000, 0, 10);
+    hNShClsVsPt[i] = new TH2F(Form("hNShClsVsPt%s", conStr[i].Data()), "TPC shared cluster fraction;pt;sharedcls/ncls", 1500, 0, 3.0, 1000, 0, 1.2);
     hNFcls[i] = new TH1F(Form("hNFcls%s", conStr[i].Data()), "TPC findable cluster distribution;findablecls;counts", 400, 0, 300);
     hNFindClsFra[i] = new TH1F(Form("hNFoundClsFra%s", conStr[i].Data()), "TPC findable cluster fraction;findablecls/ncls;counts", 400, 0, 60);
-    hNFindClsVsPt[i] = new TH2F(Form("hNFoundClsVsPt%s", conStr[i].Data()), "TPC findable cluster fraction;pt;findablecls/ncls", 2000, 0, 3.0, 2000, 0, 20.0);
-    hTPCsignal[i] = new TH1F(Form("hTPCsignal%s", conStr[i].Data()), "TPC signal distribution;TPC signal;Counts", 7000, 0, 3500);
-    hTPCsignalN[i] = new TH1F(Form("hTPCsignalN%s", conStr[i].Data()), "TPC signal distribution;TPC signal;Counts", 7000, 0, 3500);
-    hTPCsignalvsPt[i] = new TH2F(Form("hTPCsignalvsPt%s", conStr[i].Data()), "TPC signal vs pT;pt;TPC signal", 5000, 0, 5.5, 7000, 0, 2000);
-    hTPCsignalvsPtN[i] = new TH2F(Form("hTPCsignalvsPtN%s", conStr[i].Data()), "TPC signal vs pT;pt;TPC signal", 5000, 0, 5.5, 7000, 0, 2000);
-    hTPCsignalvsPtTuned[i] = new TH2F(Form("hTPCsignalvsPtTuned%s", conStr[i].Data()), "TPC signal vs pT;pt;TPC signal", 5000, 0, 5.5, 7000, 0, 2000);
-    hTPCsignalvsPtot[i] = new TH2F(Form("hTPCsignalvsPtot%s", conStr[i].Data()), "TPC signal vs Ptot;Ptot;TPC signal", 3000, 0, 10, 7000, 0, 2000);
-    hTPCsignalTuned[i] = new TH1F(Form("hTPCsignalTuned%s", conStr[i].Data()), "TPC signal distribution;TPC signal;Counts", 7000, 0, 3500);
+    hNFindClsVsPt[i] = new TH2F(Form("hNFoundClsVsPt%s", conStr[i].Data()), "TPC findable cluster fraction;pt;findablecls/ncls", 1500, 0, 3.0, 2000, 0, 10.0);
+    hTPCsignal[i] = new TH1F(Form("hTPCsignal%s", conStr[i].Data()), "TPC signal distribution;TPC signal;Counts", 3000, 0, 3500);
+    hTPCsignalN[i] = new TH1F(Form("hTPCsignalN%s", conStr[i].Data()), "TPC signal distribution;TPC signal;Counts", 3000, 0, 3500);
+    hTPCsignalvsPt[i] = new TH2F(Form("hTPCsignalvsPt%s", conStr[i].Data()), "TPC signal vs pT;pt;TPC signal", 3000, 0, 5.5, 3000, 0, 1500);
+    hTPCsignalvsPtN[i] = new TH2F(Form("hTPCsignalvsPtN%s", conStr[i].Data()), "TPC signal vs pT;pt;TPC signal", 3000, 0, 5.5, 3000, 0, 1500);
+    hTPCsignalvsPtTuned[i] = new TH2F(Form("hTPCsignalvsPtTuned%s", conStr[i].Data()), "TPC signal vs pT;pt;TPC signal", 3000, 0, 5.5, 3000, 0, 1500);
+    hTPCsignalvsPtot[i] = new TH2F(Form("hTPCsignalvsPtot%s", conStr[i].Data()), "TPC signal vs Ptot;Ptot;TPC signal", 3000, 0, 10, 3000, 0, 1500);
+    hTPCsignalTuned[i] = new TH1F(Form("hTPCsignalTuned%s", conStr[i].Data()), "TPC signal distribution;TPC signal;Counts", 3000, 0, 3500);
     hITSsignal[i] = new TH1F(Form("hITSsignal%s", conStr[i].Data()), "ITS signal distribution;ITS signal;Counts", 10000, 0, 15000);
     hChi2TPC[i] = new TH1F(Form("hChi2TPC%s", conStr[i].Data()), "TPC chi2 distribution;TPC chi2;Counts", 1000, 0, 2000);
     hChi2ITS[i] = new TH1F(Form("hChi2ITS%s", conStr[i].Data()), "ITS chi2 distribution;ITS chi2;Counts", 1000, 0, 2000);
@@ -411,6 +411,7 @@ void AliAnalysisTaskFM_marooz::FillTrackInfo() {
   Int_t foundPion[_numEnvs] = {0};
   Int_t foundKaon[_numEnvs] = {0};
   Int_t foundProton[_numEnvs] = {0};
+  std::fill_n(&foundPart[0][0], _maxPtBin * _numEnvs, 0);
 
   TClonesArray *AODMCTrackArray = dynamic_cast<TClonesArray *>(fInputEvent->FindListObject(AliAODMCParticle::StdBranchName()));
   AliAODMCParticle *particle;
@@ -650,7 +651,7 @@ void AliAnalysisTaskFM_marooz::FillTrackInfo() {
     hNumPionsCent[i]->Fill(c_percentile, foundPion[i]);
     hNumKaonsCent[i]->Fill(c_percentile, foundKaon[i]);
     hNumProtonsCent[i]->Fill(c_percentile, foundProton[i]);
-    continue;
+    //continue;
     std::cout << "\033[31m" <<  " for condition " << i+1 << " == :: == task marooz == :: == " << " number of pions " << foundPion[i] << " kaons " << foundKaon[i] << " protons " << foundProton[i] << std::endl;
     for (Int_t j = 0; j < _numPtBin; ++j) {
       std::cout << "\033[31m" <<  " ================================= " << std::endl;
@@ -855,8 +856,9 @@ void AliAnalysisTaskFM_marooz::CalculateNFMs(Bool_t _isGen) {
       Float_t Fq5e = _fqNum[3];
       Float_t Fq6e = _fqNum[4];
       Float_t Fq7e = _fqNum[5];
+      Float_t mult = foundPart[j][i];
 
-      if (!_isGen) fntpMBin[j][k][i]->Fill(foundPart[j][i], Mbin, Av_bincontent, Fq2e, Fq3e, Fq4e, Fq5e, Fq6e, Fq7e);
+      if (!_isGen) fntpMBin[j][k][i]->Fill(mult, Mbin, Av_bincontent, Fq2e, Fq3e, Fq4e, Fq5e, Fq6e, Fq7e);
       else fntpMBinGen[j][k]->Fill(Mbin, Av_bincontent, Fq2e, Fq3e, Fq4e, Fq5e, Fq6e, Fq7e);
       } // end of loop on number of phase space bins
     } // end of loop on pt bins

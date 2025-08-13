@@ -3,8 +3,8 @@
 
 AliAnalysisTaskFM_marooz *AddTaskFM_marooz(Int_t _YEAR_ = 2015, Bool_t _IS_MC_ = kTRUE, const char *suffix = "") {
   // Initialize variables
-  Int_t _n_pt_bins = 1;
-  Double_t _pt_bins[10] = {0.2, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  Int_t _n_pt_bins = 4;
+  Double_t _pt_bins[10] = {0.2, 2.0, 0.4, 2.0, 0.4, 1.0, 0.4, 0.6, 0.0, 0.0};
   Int_t _max_m_bins = 82;
   Int_t _bField = 0;
   Int_t _cent_min = 0, _cent_max = 5;
