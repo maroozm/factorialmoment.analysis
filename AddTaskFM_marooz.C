@@ -1,13 +1,13 @@
 #include "AliAnalysisManager.h"
 #include "AliAnalysisTaskFM_marooz.h"
 
-AliAnalysisTaskFM_marooz *AddTaskFM_marooz(Int_t _YEAR_ = 2015, Bool_t _IS_MC_ = kTRUE, const char *suffix = "") {
+AliAnalysisTaskFM_marooz *AddTaskFM_marooz(Int_t _YEAR_ = 2015, Bool_t _IS_MC_ = kFALSE, const char *suffix = "") {
   // Initialize variables
   Int_t _n_pt_bins = 4;
   Double_t _pt_bins[10] = {0.2, 2.0, 0.4, 2.0, 0.4, 1.0, 0.4, 0.6, 0.0, 0.0};
   Int_t _max_m_bins = 82;
   Int_t _bField = 0;
-  Int_t _cent_min = 0, _cent_max = 5;
+  Int_t _cent_min = 0, _cent_max = 50;
   Bool_t _pileup_rejection = kTRUE, _two_track_QA = kFALSE, _mixed_event = kFALSE;
   Double_t _eta_min = -0.8, _eta_max = 0.8;
   Double_t _vtx_x_max = 0.3, _vtx_y_max = 0.4, _vtx_z_max = 10.0;
@@ -91,12 +91,12 @@ AliAnalysisTaskFM_marooz *AddTaskFM_marooz(Int_t _YEAR_ = 2015, Bool_t _IS_MC_ =
 
   _mgr->AddTask(_task);
 
-  const Int_t _NUM_CON_ = 26; // Number of conditions (e.g., 1 or 2)
+  const Int_t _NUM_CON_ = 2; // Number of conditions (e.g., 1 or 2)
   const Int_t _N_OUTPUTS_ = _NUM_CON_ * (_n_pt_bins + 1) + (_IS_MC_ ? _n_pt_bins : 0);
   AliAnalysisDataContainer *_output_list[_N_OUTPUTS_];
   
   TString str;
-  TString _con_str[_NUM_CON_] = { "fb128rchi2", "fb128dca", "fb128rchi2dca", "fb128rchi2dcaPrim", "fb128rchi2dcawomat", "fb128rchi2dcawowd", "fb128shcls", "fb128shclsdca", "fb128shclsrchi2", "fb128shclsrchi2dca", "fb128shclsrchi2dcaPrim","fb128shclsrchi2dcawomat", "fb128shclsrchi2dcawowd", "fb768rchi2", "fb768dca", "fb768rchi2dca", "fb768rchi2dcaPrim", "fb768rchi2dcawomat", "fb768rchi2dcawowd", "fb768shcls", "fb768shclsdca", "fb768shclsrchi2", "fb768shclsrchi2dca", "fb768shclsrchi2dcaPrim","fb768shclsrchi2dcawomat", "fb768shclsrchi2dcawowd" };
+  TString _con_str[_NUM_CON_] = { "fb128", "fb768" };
 
   for (Int_t i = 0; i < 3; i++) std::cout << "\033[31m =================================================== \033[0m" << std::endl;
   

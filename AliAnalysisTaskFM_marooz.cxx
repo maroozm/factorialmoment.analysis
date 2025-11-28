@@ -59,7 +59,7 @@ void AliAnalysisTaskFM_marooz::UserCreateOutputObjects() {
     }
   }
   TString dataStr = _FLAG_MC_ ? "rec" : "";
-  TString conStr[_numEnvs] = { "fb128rchi2", "fb128dca", "fb128rchi2dca", "fb128rchi2dcaPrim", "fb128rchi2dcawomat", "fb128rchi2dcawowd", "fb128shcls", "fb128shclsdca", "fb128shclsrchi2", "fb128shclsrchi2dca", "fb128shclsrchi2dcaPrim","fb128shclsrchi2dcawomat", "fb128shclsrchi2dcawowd", "fb768rchi2", "fb768dca", "fb768rchi2dca", "fb768rchi2dcaPrim", "fb768rchi2dcawomat", "fb768rchi2dcawowd", "fb768shcls", "fb768shclsdca", "fb768shclsrchi2", "fb768shclsrchi2dca", "fb768shclsrchi2dcaPrim","fb768shclsrchi2dcawomat", "fb768shclsrchi2dcawowd" }; 
+  TString conStr[_numEnvs] = { "fb128", "fb768" }; 
   
   hEventCounter = new TH1F("hEventCounter", ";;no. of events", 9, 0.5, 9.5);
   hEventCounter->SetFillColor(kGreen);
@@ -423,20 +423,19 @@ void AliAnalysisTaskFM_marooz::FillTrackInfo() {
     if (!track) continue;
 
     Int_t label = track->GetLabel();
-    if (TMath::Abs(label) < AODMCTrackArray->GetEntriesFast())  particle = static_cast<AliAODMCParticle*>(AODMCTrackArray->At(TMath::Abs(label)));
+    if (_FLAG_MC_ && TMath::Abs(label) < AODMCTrackArray->GetEntriesFast())  particle = static_cast<AliAODMCParticle*>(AODMCTrackArray->At(TMath::Abs(label)));
 
     Int_t trackNature = -1;
-    if (particle->IsPhysicalPrimary()) trackNature = 0;
-    if (particle->IsSecondaryFromMaterial()) trackNature = 1;
-    if (particle->IsSecondaryFromWeakDecay()) trackNature = 2;
-    if (trackNature < 0) continue;
+    if (_FLAG_MC_ && particle->IsPhysicalPrimary()) trackNature = 0;
+    if (_FLAG_MC_ && particle->IsSecondaryFromMaterial()) trackNature = 1;
+    if (_FLAG_MC_ && particle->IsSecondaryFromWeakDecay()) trackNature = 2;
+    if (_FLAG_MC_ && trackNature < 0) continue;
     hTrackCounter->Fill(2);
     hTrackCounter->GetXaxis()->SetBinLabel(2, "track nature");
 
     const Bool_t tuneOnDataTPC = fPIDResponse->IsTunedOnData() && ((fPIDResponse->GetTunedOnDataMask() & AliPIDResponse::kDetTPC) == AliPIDResponse::kDetTPC);
     Double_t dEdxTPC = tuneOnDataTPC ? fPIDResponse->GetTPCsignalTunedOnData(track) : track->GetTPCsignal();
 
-    Float_t pdg = particle->GetPdgCode();
     Float_t pt = track->Pt();
     Float_t eta = track->Eta();
     Float_t phi = track->Phi();
@@ -490,7 +489,9 @@ void AliAnalysisTaskFM_marooz::FillTrackInfo() {
     Bool_t ptDCAxy1 = (abs(dcaXY) < (0.0182 + 0.035 / pow(pt, 1.01))); // run1
     
     // from ilya note (suggested by mesut) https://alice-notes.web.cern.ch/node/1653
-    Bool_t ptDCAxy2 = (abs(dcaXY) < (0.028 + 0.04 * pow(pt, 1.01))); // run2
+    // Bool_t ptDCAxy2 = (abs(dcaXY) < (0.028 + 0.04 * pow(pt, 1.01))); // run2
+    // from Ante's email conversation after PAG presentation on 30/Oct/2025
+    Bool_t ptDCAxy2 = (abs(dcaXY) < (0.0105 + 0.035 / pow(pt, 1.1))); // run2
     Bool_t i_tpcFracShaClsFindCls = nSharedCls/nCls <= 0.3 && nSharedCls/nCrossedRows <= 0.25 && nFindableCls/nCls >= 0.8;
 
     Bool_t ptDCAcut = (_YEAR_ == 2010) ? ptDCAxy1 : ptDCAxy2;
@@ -503,35 +504,11 @@ void AliAnalysisTaskFM_marooz::FillTrackInfo() {
     if (fb128_bug) hTrackCounter->Fill(10); hTrackCounter->GetXaxis()->SetBinLabel(10, "fb128_bug");
     if (i_tpcRowsClsChi2) hTrackCounter->Fill(11); hTrackCounter->GetXaxis()->SetBinLabel(11, "crows>80 && chi2percl<4");
     if (i_tpcFracShaClsFindCls) hTrackCounter->Fill(12); hTrackCounter->GetXaxis()->SetBinLabel(12, "shcls/ncls<0.3 && shcls/ncrows<0.25 && nfindablecls/ncls>0.8");
-    if (ptDCAcut) hTrackCounter->Fill(13); hTrackCounter->GetXaxis()->SetBinLabel(13, Form("ptDCAcut: %s", _YEAR_ == 2010 ? "0.0182 + 0.035 / pow(pt, 1.01)" : "0.028 + 0.04 * pow(pt, 1.01)"));
+    if (ptDCAcut) hTrackCounter->Fill(13); hTrackCounter->GetXaxis()->SetBinLabel(13, Form("ptDCAcut: %s", _YEAR_ == 2010 ? "0.0182 + 0.035 / pow(pt, 1.01)" : "0.0105 + 0.035 / pow(pt, 1.1)"));
 
     Bool_t _type[_numEnvs] = {kFALSE};
-    if (fb128 && i_tpcRowsClsChi2) _type[0] = kTRUE;
-    if (fb128 && ptDCAcut) _type[1] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && ptDCAcut) _type[2] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && ptDCAcut && (trackNature == 0)) _type[3] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && ptDCAcut && (trackNature != 1)) _type[4] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && ptDCAcut && (trackNature != 2)) _type[5] = kTRUE;
-    if (fb128 && i_tpcFracShaClsFindCls) _type[6] = kTRUE;
-    if (fb128 && i_tpcFracShaClsFindCls && ptDCAcut) _type[7] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls) _type[8] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut) _type[9] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut && (trackNature == 0)) _type[10] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut && (trackNature != 1)) _type[11] = kTRUE;
-    if (fb128 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut && (trackNature != 2)) _type[12] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2) _type[13] = kTRUE;
-    if (fb768 && ptDCAcut) _type[14] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && ptDCAcut) _type[15] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && ptDCAcut && (trackNature == 0)) _type[16] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && ptDCAcut && (trackNature != 1)) _type[17] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && ptDCAcut && (trackNature != 2)) _type[18] = kTRUE;
-    if (fb768 && i_tpcFracShaClsFindCls) _type[19] = kTRUE;
-    if (fb768 && i_tpcFracShaClsFindCls && ptDCAcut) _type[20] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls) _type[21] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut) _type[22] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut && (trackNature == 0)) _type[23] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut && (trackNature != 1)) _type[24] = kTRUE;
-    if (fb768 && i_tpcRowsClsChi2 && i_tpcFracShaClsFindCls && ptDCAcut && (trackNature != 2)) _type[25] = kTRUE;
+    if (fb128) _type[0] = kTRUE;
+    if (fb768) _type[1] = kTRUE;
 
     GetPtBin(pt);
     hEnvsCounter->Fill(1);
@@ -578,9 +555,11 @@ void AliAnalysisTaskFM_marooz::FillTrackInfo() {
       hEtaDis[j]->Fill(eta);
       hPhiDis[j]->Fill(phi);
       hGoldenChi2[j]->Fill(goldenchi2);
-      if (TMath::Abs(pdg) == 211) foundPion[j]++;
-      if (TMath::Abs(pdg) == 321) foundKaon[j]++;
-      if (TMath::Abs(pdg) == 2212) foundProton[j]++;
+      if (_FLAG_MC_) {
+	if (TMath::Abs(particle->GetPdgCode()) == 211) foundPion[j]++;
+      	if (TMath::Abs(particle->GetPdgCode()) == 321) foundKaon[j]++;
+      	if (TMath::Abs(particle->GetPdgCode()) == 2212) foundProton[j]++;
+      }
 
        for (Int_t k = 0; k < _numPtBin; ++k) {
          if (_ptBinFlags[k]) {

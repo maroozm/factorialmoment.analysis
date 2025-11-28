@@ -14,7 +14,7 @@
 #include "TList.h"
 #include "TNtuple.h"
 
-const Int_t _numM = 52, _maxPtBin = 5, _numEnvs = 26;
+const Int_t _numM = 52, _maxPtBin = 5, _numEnvs = 2;
 
 class TH1F;
 class TH2F;
