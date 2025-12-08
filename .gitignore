@@ -1,0 +1,22 @@
+# all .xml files, as they are generated while running the code
+*.xml
+
+# files created by AliROOT as dictionary files and temporary files
+*_dict*
+*.so
+*.pcm
+*.d
+
+# task files
+task_marooz*
+stderr
+stdout
+outputs_valid
+test.cxx
+Task_Gtihub.cxx
+
+# root files
+EventStat_temp.root
+AnalysisResults.root
+event_stat.root
+tempChecksum_0/
