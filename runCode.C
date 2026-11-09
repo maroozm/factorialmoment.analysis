@@ -23,7 +23,7 @@ R__ADD_INCLUDE_PATH($ROOTSYS)
 void runCode(TString taskName = "test_ME",
              Int_t _mode = 0,        // 0: test, 1: full, 2: terminate, 3: merge
              Int_t _nruns = 1,       // 0 for all, or a specific number
-             Int_t period = 10,      // 10, 15, 18
+             Int_t period = 15,      // 10, 15, 18
              Bool_t isMC = kFALSE,   // kTRUE for MC, kFALSE for DATA
              TString dataset = "18q" // For 2018 DATA: "18q" or "18r", ignored
                                      // for MC and other periods
@@ -82,14 +82,13 @@ void runCode(TString taskName = "test_ME",
 
   if (period == 10)
     task = reinterpret_cast<AliAnalysisTaskFM_marooz *>(gInterpreter->ExecuteMacro(
-        Form("AddTaskFM_marooz.C(%d, %s, \"taskfm\")", 2010, isMC ? "kTRUE" : "kFALSE")));
+        Form("AddTaskFM_marooz.C(%d, %s, 0.7, 2.0, \"taskfm\")", 2010, isMC ? "kTRUE" : "kFALSE")));
   if (period == 15)
     task = reinterpret_cast<AliAnalysisTaskFM_marooz *>(gInterpreter->ExecuteMacro(
-        Form("AddTaskFM_marooz.C(%d, %s, \"taskfm\")", 2015, isMC ? "kTRUE" : "kFALSE")));
+        Form("AddTaskFM_marooz.C(%d, %s, 0.7, 2.0, \"taskfm\")", 2015, isMC ? "kTRUE" : "kFALSE")));
   if (period == 18)
-    task =
-        reinterpret_cast<AliAnalysisTaskFM_marooz *>(gInterpreter->ExecuteMacro(
-            "AddTaskFM_marooz.C(2018, isMC, \"taskfm\")"));
+    task = reinterpret_cast<AliAnalysisTaskFM_marooz *>(gInterpreter->ExecuteMacro(
+        Form("AddTaskFM_marooz.C(%d, %s, 0.7, 2.0, \"taskfm\")", 2018, isMC ? "kTRUE" : "kFALSE")));
   std::cout << "\033[31m == :: == task marooz == :: == "
             << " running AddTaskFM_marooz.C with year 20" << period << "\033[0m"
             << std::endl;

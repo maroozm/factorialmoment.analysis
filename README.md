@@ -1,4 +1,6 @@
-# Factorial Moments Analysis for ALICE
+# Factorial Moments Analysis for ALICE (Run 2)
+
+> **Note:** This repository is for **ALICE Run 2** (LHC10h, LHC15o, LHC18q/r). For **ALICE Run 3** analysis, see: https://github.com/maroozm/o2-factorial-moments
 
 This repository contains the implementation of factorial moments analysis for charged particles in two dimensions (eta and phi) for ALICE data and MC simulations.
 
@@ -16,10 +18,13 @@ The analysis implements intermittency analysis using factorial moments to study 
     ├── runCode.C                       # Main execution script
     ├── runLists.h                      # Run list definitions for different 
     └── utils/                          # Utility scripts for offline processing
+        ├── ScanOutput.h                # Shared auto-detection helper for output lists/ntuples
+        ├── getFqbinDAT.C               # Factorial moments extraction (auto-detects real/data/gen/mixed)
+        ├── makeFqStdDAT.C              # Final factorial moments calculation (auto-detects dirs/bins)
+        ├── plot_configs_grid.C         # QA grid of multiplicity/eta/phi and track-quality plots
+        ├── corkO.txt                   # Colour palette used by plot_configs_grid.C
         ├── copyGRIDFILES.sh            # File copying utility
         ├── merge_batches.sh            # File merging after copying
-        ├── makeFqStdDAT.C              # Final factorial moments calculation
-        └── getFqbinDAT.C               # Factorial moments extraction
         └── mergeLocalOutputs.sh        # File merging utility
 ```
 
@@ -40,8 +45,27 @@ The main analysis task class that implements factorial moments calculation. Key 
 
 Configuration script that sets up the analysis task with various parameters:
 
-#### **Track Selection Criteria (n different conditions):**
-- can implement n different cut conditions, the number should be put in header file, and definitions in ```AliAnalysisTaskFM_marooz::FillTrackInfo()
+#### **Track Selection Criteria (5 conditions):**
+The analysis implements 5 track selection conditions:
+
+1. **fb128** (baseline): fb128 filter bit + |DCAxy| < 2.4 cm + |DCAz| < 3.2 cm + TPC clusters > 50 + TPC chi2/cluster <= 4.0
+2. **fb128crows**: fb128 + minimum TPC crossed rows (configurable via `SetCrowsMinCut()`, default 80)
+3. **fb128shcls**: fb128 + maximum shared cluster fraction nSharedCls/nCls (configurable via `SetSharedClsFractionCut()`, default 0.4)
+4. **fb128crowsoverfindable**: fb128 + minimum ratio of crossed rows/findable clusters (configurable via `SetCrowsOverFindableCut()`, default 0.8)
+5. **fb768**: fb768 filter bit (hybrid TPC+ITS tracks)
+
+The number of conditions is set in the header file (`_numEnvs = 5`) and the condition logic is defined in `AliAnalysisTaskFM_marooz::FillTrackInfo()`.
+
+#### **Configuration Parameters (AddTaskFM_marooz.C):**
+New configurable track selection cuts:
+```cpp
+// Track selection cuts for the 5 conditions
+Double_t _crows_min = 80.0;              // Minimum TPC crossed rows for fb128crows
+Double_t _shcls_max = 0.4;               // Maximum shared cluster fraction for fb128shcls  
+Double_t _crows_over_findable_min = 0.8; // Minimum crossed rows/findable clusters for fb128crowsoverfindable
+// Magnetic field polarity
+Int_t _bField = 0;                       // 0=auto (2015:+1, 2018:-1, 2010:0), 1=positive, -1=negative
+```
 
 #### **Configuration Parameters:**
 ```cpp
@@ -148,10 +172,31 @@ The analysis automatically submits jobs to the ALICE Grid with:
 ## Data Processing Workflow
 
 1. **Analysis Execution**: Run `runCode.C` to submit grid jobs
-2. **Data Extraction**: Use `utils/getFqbinDAT.C` to extract factorial moments offline from the root files, along with sampling error.
-3. **Calculation**: Use `utils/makeFqStdDAT.C` to calculate the final mean of factorial moments and their errors. creates FqStdError.dat files.
-4. **Copying**: Use `utils/copyGRIDFILES.sh` in case you are not able to terminate grid jobs (by any reason), put the grid directory path in it, it will copy all the rootfiles in your local directory. Use `utils/merge_batches.sh` use after `copyGRIDFILES.sh` to merge the files, so that you can have 10-20 files at the end.
-5. **Merging**: `utils/mergeLocalOutputs.sh`, this is to be used after running  step 2, in case you have more than one output root file.
+
+2. **Data Extraction**: Use `utils/getFqbinDAT.C` to extract factorial moments offline from a merged `AnalysisResults.root`, along with the sampling error. The macro scans the file and auto-detects the pt bins, conditions and number of M bins (DATA, MC reconstructed, generated and mixed-event output are all handled). Run it from the output directory:
+   ```bash
+   root -l -q '/path/to/utils/getFqbinDAT.C("AnalysisResults.root")'
+   ```
+   The full signature is `getFqbinDAT(inputFile, sampleID = 1, doMixed = 0)`. The third argument enables mixed-event extraction (disabled by default); note that mixed-event ntuples are only produced if `AddTaskFM_marooz.C` was run with `_mixed_event = kTRUE` (it defaults to `kFALSE`):
+   ```bash
+   root -l -q '/path/to/utils/getFqbinDAT.C("AnalysisResults.root", 1, 1)'
+   ```
+   Mixed-event results are written under `<condition>/bin<N>/datafiles/mixed/` and are picked up automatically by `makeFqStdDAT.C`. The command also creates one `<condition>/bin<N>/datafiles/` directory per condition and pt bin with the `.dat` files and `Fqe_standardErrorSample*.root`.
+
+3. **Merging samples**: `utils/mergeLocalOutputs.sh` — use after step 2 when several input files produced separate `Fqe_standardErrorSample*.root` files. It merges them into a single `Fqe_standardErrorSample.root` per directory.
+
+4. **Calculation**: Use `utils/makeFqStdDAT.C` to calculate the final mean of factorial moments and their errors. It auto-detects the condition directories, pt bins and number of M bins from the current directory, then writes `FqeStdError.csv` (with bin, condition, type, date and source-file metadata):
+   ```bash
+   root -l -q '/path/to/utils/makeFqStdDAT.C'
+   ```
+
+5. **QA plotting**: Use `utils/plot_configs_grid.C` to produce a grid of multiplicity/eta/phi distributions and track-quality QA plots for every configuration contained in a merged ROOT file:
+   ```bash
+   root -l -q 'utils/plot_configs_grid.C("ROOTMERGE-....root")'
+   ```
+   An optional second argument sets the output name; `plot_configs_grid_norebin("file.root")` disables the automatic 2D rebinning. A `.pdf` and `.png` are written. The `corkO.txt` palette must stay next to the macro.
+
+6. **Copying**: Use `utils/copyGRIDFILES.sh` in case you are not able to terminate grid jobs (by any reason), put the grid directory path in it, it will copy all the rootfiles in your local directory. Use `utils/merge_batches.sh` after `copyGRIDFILES.sh` to merge the files, so that you can have 10-20 files at the end.
 
 
 ## Contributors

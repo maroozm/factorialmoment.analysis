@@ -345,7 +345,7 @@ void AliAnalysisTaskFM_marooz::UserExec(Option_t *) {
   Float_t lvy = (Float_t)vertex->GetY();
   Float_t lvz = (Float_t)vertex->GetZ();
   hQAVz[0]->Fill(lvz);
-  if ((fabs(lvx) < 0.4) && (fabs(lvy) < 0.4) && (fabs(lvz) < 10.0)) {
+  if ((fabs(lvx) < _vxMax) && (fabs(lvy) < _vyMax) && (fabs(lvz) < _vzMax)) {
     hQAVx->Fill(lvx);
     hQAVy->Fill(lvy);
     hQAVz[1]->Fill(lvz); _vzMax = lvz;

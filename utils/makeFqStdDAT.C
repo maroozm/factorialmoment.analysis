@@ -1,144 +1,253 @@
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include <TStyle.h>
 #include <TNtuple.h>
 #include <TFile.h>
 #include <TH1.h>
 #include <TCanvas.h>
+#include <TSystem.h>
+#include <TString.h>
+#include <TObjString.h>
+#include <TDatime.h>
+#include <vector>
+#include <string>
+#include <algorithm>
 
 void makeFqStdDAT()
 {
-  const Int_t NDIRS = 25;
-  const Int_t NBINS = 2;
-  const char* dirName[NDIRS] = { "fb128", "fb768", "fb128wcuts", "fb128Prim", "fb128womat", "fb128wowd", "fb128wcutsPrim", "fb128wcutswomat", "fb128wcutswowd", "fb768Prim", "fb768womat", "fb768wowd", "fb128i1", "fb128i2", "fb128wcutsi1", "fb128wcutsi2", "fb128i1i2", "fb128wcutsPrimi1", "fb128wcutsPrimi2", "fb768i1", "fb768i2", "fb768i1i2", "fb768Primi1", "fb768Primi2", "gen" };
-  //const char* dirName[NDIRS] = { "fb128" };
+  // Auto-detect directories by scanning for bin*/datafiles/Fqe_standardErrorSample1.root
+  std::vector<std::string> dirList;
+  const char *baseDir = ".";
+  void *dirp = gSystem->OpenDirectory(baseDir);
+  if (!dirp) {
+    std::cout << "\033[31mError opening current directory\033[0m" << std::endl;
+    return;
+  }
+  const char *entry;
+  while ((entry = gSystem->GetDirEntry(dirp))) {
+    TString entryStr(entry);
+    if (entryStr == "." || entryStr == "..") continue;
+    // Check both real and mixed directory structures for any sample file
+    Bool_t hasReal = kFALSE, hasMixed = kFALSE;
+    void *dirp2 = gSystem->OpenDirectory(Form("%s/bin1/datafiles", entry));
+    if (dirp2) {
+      const char *e;
+      while ((e = gSystem->GetDirEntry(dirp2))) {
+        TString eStr(e);
+        if (eStr.BeginsWith("Fqe_standardErrorSample") && eStr.EndsWith(".root")) { hasReal = kTRUE; break; }
+      }
+      gSystem->FreeDirectory(dirp2);
+    }
+    void *dirp3 = gSystem->OpenDirectory(Form("%s/bin1/datafiles/mixed", entry));
+    if (dirp3) {
+      const char *e;
+      while ((e = gSystem->GetDirEntry(dirp3))) {
+        TString eStr(e);
+        if (eStr.BeginsWith("Fqe_standardErrorSample") && eStr.EndsWith(".root")) { hasMixed = kTRUE; break; }
+      }
+      gSystem->FreeDirectory(dirp3);
+    }
+    if (hasReal || hasMixed) {
+      dirList.push_back(std::string(entry));
+      std::cout << "\033[32mAuto-detected directory: " << entry << "\033[0m" << std::endl;
+    }
+  }
+  gSystem->FreeDirectory(dirp);
 
-  const Int_t Ntmax = 53;
-  const TString Name = "C";
+  Int_t NDIRS = dirList.size();
+  if (NDIRS == 0) {
+    std::cout << "\033[31mNo directories found with expected structure\033[0m" << std::endl;
+    return;
+  }
+
+  // Auto-detect number of bins from the first directory
+  Int_t NBINS = 0;
+  for (Int_t nBins = 1; nBins <= 100; nBins++) {
+    Bool_t found = kFALSE;
+    // Check real
+    void *dp = gSystem->OpenDirectory(Form("%s/bin%d/datafiles", dirList[0].c_str(), nBins));
+    if (dp) {
+      const char *e;
+      while ((e = gSystem->GetDirEntry(dp))) {
+        TString eStr(e);
+        if (eStr.BeginsWith("Fqe_standardErrorSample") && eStr.EndsWith(".root")) { found = kTRUE; break; }
+      }
+      gSystem->FreeDirectory(dp);
+    }
+    // Check mixed
+    if (!found) {
+      dp = gSystem->OpenDirectory(Form("%s/bin%d/datafiles/mixed", dirList[0].c_str(), nBins));
+      if (dp) {
+        const char *e;
+        while ((e = gSystem->GetDirEntry(dp))) {
+          TString eStr(e);
+          if (eStr.BeginsWith("Fqe_standardErrorSample") && eStr.EndsWith(".root")) { found = kTRUE; break; }
+        }
+        gSystem->FreeDirectory(dp);
+      }
+    }
+    if (!found) break;
+    NBINS = nBins;
+  }
+  std::cout << "\033[32mAuto-detected: " << NDIRS << " directories, " << NBINS << " bins\033[0m" << std::endl;
+
+  TDatime now;
+  TString dateStr = Form("%d-%02d-%02d %02d:%02d:%02d", now.GetYear(), now.GetMonth(), now.GetDay(), now.GetHour(), now.GetMinute(), now.GetSecond());
+
   for (Int_t nDirs = 0; nDirs < NDIRS; nDirs++) {
     for (Int_t nBins = 0; nBins < NBINS; nBins++) {
+      for (Int_t iPath = 0; iPath < 2; iPath++) {
+      TString subDir = (iPath == 0) ? "datafiles" : "datafiles/mixed";
+      TString dirPath = Form("%s/bin%d/%s", dirList[nDirs].c_str(), nBins + 1, subDir.Data());
 
-      TString fNtpname;
-      TString canName[Ntmax];   // canvases to draw the fqs
-      TString nt[Ntmax];        // canvases to draw the fqs
-      TNtuple* fntupleM[Ntmax]; // getting Ntuples from the File
-      Float_t NumBin[Ntmax], Avbin[Ntmax];
+      // Find any Fqe_standardErrorSample*.root in this directory
+      TString filePath = "";
+      void *dp = gSystem->OpenDirectory(dirPath.Data());
+      if (!dp) continue;
+      const char *e;
+      while ((e = gSystem->GetDirEntry(dp))) {
+        TString eStr(e);
+        if (eStr.BeginsWith("Fqe_standardErrorSample") && eStr.EndsWith(".root")) {
+          filePath = Form("%s/%s", dirPath.Data(), eStr.Data());
+          break;
+        }
+      }
+      gSystem->FreeDirectory(dp);
+      if (filePath == "") continue;
 
-      TFile* f11 = new TFile(Form("%s/bin%d/datafiles/Fqe_standardErrorSample.root", dirName[nDirs], nBins + 1), "READ"); // File: .root file Fqe Ntuples
-      if (!f11) {
-        std::cout << "\033[31m"
-                  << "Error opening file " << f11->GetName() << "\033[0m" << std::endl;
-        exit(1);
-      } else {
-        std::cout << "\033[32m"
-                  << "File " << f11->GetName() << " opened successfully \n"
-                  << "\033[0m" << std::endl;
+      TFile* f11 = new TFile(filePath.Data(), "READ");
+      if (!f11->IsOpen()) {
+        std::cout << "\033[31mError opening file " << f11->GetName() << "\033[0m" << std::endl;
+        continue;
+      }
+      std::cout << "\033[32mFile " << f11->GetName() << " opened successfully\033[0m" << std::endl;
+
+      // Read metadata
+      TString ptBinName = Form("bin%d", nBins + 1);
+      TString rootFilePath = "unknown";
+      TString condName = dirList[nDirs];
+      TString metaType = "unknown";
+
+      TObjString *metaPt = (TObjString*)f11->Get("meta_ptBinName");
+      if (metaPt) ptBinName = metaPt->GetString();
+      TObjString *metaFile = (TObjString*)f11->Get("meta_inputFile");
+      if (metaFile) rootFilePath = metaFile->GetString();
+      TObjString *metaCond = (TObjString*)f11->Get("meta_condName");
+      if (metaCond) condName = metaCond->GetString();
+      TObjString *metaTypeObj = (TObjString*)f11->Get("meta_type");
+      if (metaTypeObj) metaType = metaTypeObj->GetString();
+
+      // Auto-detect Ntmax
+      Int_t useNtmax = 0;
+      for (Int_t t = 1; t <= 200; t++) {
+        TString fNtpname = "FqNtpStndBinM" + TString::Itoa(t, 10);
+        TNtuple *ntTest = (TNtuple*)f11->Get(fNtpname.Data());
+        if (!ntTest) break;
+        useNtmax = t;
+      }
+      if (useNtmax == 0) {
+        std::cout << "\033[31mNo ntuples found in file\033[0m" << std::endl;
+        f11->Close();
+        continue;
       }
 
-      for (Int_t t = 1; t < Ntmax; t++) {
-        fNtpname = "FqNtpStndBinM";
-        fNtpname += t;
+      TNtuple* fntupleM[200];
+      TString fNtpname;
+      for (Int_t t = 1; t <= useNtmax; t++) {
+        fNtpname = "FqNtpStndBinM" + TString::Itoa(t, 10);
         fntupleM[t] = (TNtuple*)f11->Get(fNtpname.Data());
       }
 
-      for (Int_t t = 0; t < Ntmax; t++) {
-        canName[t] = Name;
-        canName[t] += t;
-      }
-
-      Int_t x[Ntmax], y[Ntmax]; // x,y coordinates of the canvases
-      for (Int_t ii = 0; ii < Ntmax; ii++) {
-        x[ii] = 10 + (ii * 15);
-        y[ii] = 10 + (ii * 15);
-      }
       f11->cd();
-      TString bin = "c";
-      TString bincon = "bincontent";
-
-      for (Int_t loop = 0; loop < Ntmax; loop++) {
-        Avbin[loop] = 0.0;
-        NumBin[loop] = 0.0;
-      }
       std::ofstream outfile1;
-      outfile1.open(Form("%s/bin%d/datafiles/FqeStdError.dat", dirName[nDirs], nBins + 1), std::ofstream::out); // Output file to store
+      outfile1.open(Form("%s/bin%d/%s/FqeStdError.csv", dirList[nDirs].c_str(), nBins + 1, subDir.Data()), std::ofstream::out);
 
-      for (Int_t Ntnum = 1; Ntnum < Ntmax; Ntnum++) { //...... Loop over number of bins
-        bin += 1;
-        bincon += 1;
-        //----------------------------------------------------
-        //           F_q Plots and mean value
-        //---------------------------------------------
-        TCanvas* cc = new TCanvas(bin, "Mbinx", 5, 5, 200, 200);
+      // Write CSV header with metadata
+      outfile1 << "# Bin: " << ptBinName.Data() << std::endl;
+      outfile1 << "# Condition: " << condName.Data() << std::endl;
+      outfile1 << "# Type: " << metaType.Data() << std::endl;
+      outfile1 << "# Created: " << dateStr.Data() << std::endl;
+      outfile1 << "# ROOT file: " << rootFilePath.Data() << std::endl;
+      outfile1 << "M_bins,Avg_bin_content,Fq2,StdErr_Fq2,Fq3,StdErr_Fq3,Fq4,StdErr_Fq4,Fq5,StdErr_Fq5" << std::endl;
+
+      for (Int_t Ntnum = 1; Ntnum <= useNtmax; Ntnum++) {
+        if (!fntupleM[Ntnum]) continue;
+
+        const char *cut = "abs(Fqq2) < 1e30 && abs(Fqq3) < 1e30 && abs(Fqq4) < 1e30 && abs(Fqq5) < 1e30 && abs(Fqq6) < 1e30 && abs(Fqq7) < 1e30";
+
+        TCanvas* cc = new TCanvas(Form("c%d_%d_%d", iPath, nDirs, Ntnum), "Mbinx", 5, 5, 200, 200);
         fntupleM[Ntnum]->Draw("nbins");
         TH1F* htemp = (TH1F*)cc->GetPrimitive("htemp");
-        Float_t meanbin = htemp->GetMean(); //...........Number of bins in on eaxis
+        Float_t meanbin = htemp ? htemp->GetMean() : 0;
 
-        //-----------Avg bin content--------------------------
-        TCanvas* con = new TCanvas(bincon, "Average bin content", 15, 15, 200, 300);
+        TCanvas* con = new TCanvas(Form("bc%d_%d_%d", iPath, nDirs, Ntnum), "Average bin content", 15, 15, 200, 300);
         fntupleM[Ntnum]->Draw("Avbin");
         TH1F* htemp1 = (TH1F*)con->GetPrimitive("htemp");
-        Float_t meanbincon = htemp1->GetMean(); // .........
+        Float_t meanbincon = htemp1 ? htemp1->GetMean() : 0;
 
-        // -------Canvas drawing--------------for drawing histos's
-        TCanvas* C1 = new TCanvas(canName[Ntnum], canName[Ntnum], x[Ntnum], y[Ntnum], 600, 500);
-        Float_t* row_content;
+        TCanvas* C1 = new TCanvas(Form("C%d_%d_%d", iPath, nDirs, Ntnum), Form("C%d", Ntnum), 10 + Ntnum * 15, 10 + Ntnum * 15, 600, 500);
         C1->Divide(2, 3);
 
-        //-------------------q = 2---------------------------------
+        Float_t meanf2 = 0, meanf3 = 0, meanf4 = 0, meanf5 = 0;
+        Float_t stddev2 = 0, stddev3 = 0, stddev4 = 0, stddev5 = 0;
+        Float_t NumEnt = 0;
+
         C1->cd(1);
-        fntupleM[Ntnum]->Draw("Fqq2");
-        fntupleM[Ntnum]->Draw("Fqq2");
+        fntupleM[Ntnum]->Draw("Fqq2", cut);
         TH1F* h1 = (TH1F*)C1->cd(1)->GetPrimitive("htemp");
-        Float_t meanf2 = h1->GetMean();
-        Float_t NumEnt = h1->GetEntries();
-        Float_t stddev2 = (h1->GetStdDev()) / sqrt(NumEnt);
-        // meanf2 = meanf2 / (meanbincon**2.0);  // As per standard definition
-        //---------------------q = 3-------------------------------
+        if (h1 && h1->GetEntries() > 0) {
+          meanf2 = h1->GetMean();
+          NumEnt = h1->GetEntries();
+          stddev2 = (h1->GetStdDev()) / sqrt(NumEnt);
+        }
+
         C1->cd(2);
-        fntupleM[Ntnum]->Draw("Fqq3");
+        fntupleM[Ntnum]->Draw("Fqq3", cut);
         TH1F* h2 = (TH1F*)C1->cd(2)->GetPrimitive("htemp");
-        Float_t meanf3 = h2->GetMean();
-        Float_t stddev3 = (h2->GetStdDev()) / sqrt(NumEnt);
-        // meanf3 = meanf3 / (meanbincon**3.0);
-        //---------------------q = 4-------------------------------
+        if (h2 && h2->GetEntries() > 0) {
+          meanf3 = h2->GetMean();
+          stddev3 = (h2->GetStdDev()) / sqrt(NumEnt > 0 ? NumEnt : 1);
+        }
+
         C1->cd(3);
-        fntupleM[Ntnum]->Draw("Fqq4");
+        fntupleM[Ntnum]->Draw("Fqq4", cut);
         TH1F* h3 = (TH1F*)C1->cd(3)->GetPrimitive("htemp");
-        Float_t meanf4 = h3->GetMean();
-        Float_t stddev4 = (h3->GetStdDev()) / sqrt(NumEnt);
-        //  meanf4 = meanf4 / (meanbincon**4.0);
-        //---------------------q = 5-------------------------------
+        if (h3 && h3->GetEntries() > 0) {
+          meanf4 = h3->GetMean();
+          stddev4 = (h3->GetStdDev()) / sqrt(NumEnt > 0 ? NumEnt : 1);
+        }
+
         C1->cd(4);
-        fntupleM[Ntnum]->Draw("Fqq5");
+        fntupleM[Ntnum]->Draw("Fqq5", cut);
         TH1F* h4 = (TH1F*)C1->cd(4)->GetPrimitive("htemp");
-        Float_t meanf5 = h4->GetMean();
-        Float_t stddev5 = (h4->GetStdDev()) / sqrt(NumEnt);
-        //  meanf5 = meanf5 / (meanbincon**5.0);
+        if (h4 && h4->GetEntries() > 0) {
+          meanf5 = h4->GetMean();
+          stddev5 = (h4->GetStdDev()) / sqrt(NumEnt > 0 ? NumEnt : 1);
+        }
 
-        //---------------------q = 6-------------------------------
         C1->cd(5);
-        fntupleM[Ntnum]->Draw("Fqq6");
+        fntupleM[Ntnum]->Draw("Fqq6", cut);
         TH1F* h5 = (TH1F*)C1->cd(5)->GetPrimitive("htemp");
-        Float_t meanf6 = h5->GetMean();
-        Float_t stddev6 = (h5->GetStdDev()) / sqrt(NumEnt);
-        //  meanf5 = meanf5 / (meanbincon**5.0);
+        if (h5 && h5->GetEntries() > 0) {
+          Float_t meanf6 = h5->GetMean();
+        }
 
-        //---------------------q = 7-------------------------------
         C1->cd(6);
-        fntupleM[Ntnum]->Draw("Fqq7");
+        fntupleM[Ntnum]->Draw("Fqq7", cut);
         TH1F* h6 = (TH1F*)C1->cd(6)->GetPrimitive("htemp");
-        Float_t meanf7 = h6->GetMean();
-        Float_t stddev7 = (h6->GetStdDev()) / sqrt(NumEnt);
-        //  meanf5 = meanf5 / (meanbincon**5.0);
+        if (h6 && h6->GetEntries() > 0) {
+          Float_t meanf7 = h6->GetMean();
+        }
 
-        // -------------------------------------------------------------
-        // WRITTING INTO DATA FILE
-        //---------------------------------------------------------
-        outfile1 << meanbin << "\t" << meanbincon << "\t" << meanf2 << "\t" << stddev2 << "\t" << meanf3
-                 << "\t" << stddev3 << "\t" << meanf4 << "\t" << stddev4 << "\t" << meanf5 << "\t" << stddev5 /* << "\t" << meanf6 << "\t" << stddev6 << "\t" << meanf7 << "\t" << stddev7 */ << "\n";
+        outfile1 << (Int_t)meanbin << "," << meanbincon << "," << meanf2 << "," << stddev2 << ","
+                 << meanf3 << "," << stddev3 << "," << meanf4 << "," << stddev4 << ","
+                 << meanf5 << "," << stddev5 << std::endl;
       }
 
       outfile1.close();
-    } // end of loop over bins
-  } // end of loop over dirs
+      f11->Close();
+      } // iPath
+    }
+  }
 }
