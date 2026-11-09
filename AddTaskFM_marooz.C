@@ -13,7 +13,7 @@ AliAnalysisTaskFM_marooz *AddTaskFM_marooz(Int_t _YEAR_ = 2015, Bool_t _IS_MC_ =
   // Only effective for 2018 PbPb; the 2015 (LHC15o) setup ignores the level.
   if (_pileup_cut_level < 1) _pileup_cut_level = 1;
   Double_t _eta_min = -0.8, _eta_max = 0.8;
-  Double_t _vtx_x_max = 0.3, _vtx_y_max = 0.4, _vtx_z_max = _vtx_z_max;
+  Double_t _vtx_x_max = 0.3, _vtx_y_max = 0.4; // _vtx_z_max is a function parameter
   if (_YEAR_ == 2010) _pileup_rejection = kFALSE; // pileup rejection not available for 2010 data
 
   // all the redundant variables:: not being used now
@@ -128,7 +128,7 @@ AliAnalysisTaskFM_marooz *AddTaskFM_marooz(Int_t _YEAR_ = 2015, Bool_t _IS_MC_ =
     std::cout << "\033[31m == :: == task marooz == :: == " << " created output container: " << str << "\033[0m" << std::endl;
   }
   
-  char *name = "ntplist";
+  const char *name = "ntplist";
   if (_IS_MC_) name = "ntplistRe";
   for (Int_t i = 0; i < _NUM_CON_; i++) {
     for (Int_t nbins = 0; nbins < _n_pt_bins; nbins++) {
